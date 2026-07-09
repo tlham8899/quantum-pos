@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum POS - ລະບົບຈັດການໜ້າຮ້ານ</title>
+    <!-- ໂຫຼດ Tailwind CSS ສຳລັບການຈັດການ Layout ທີ່ສວຍງາມ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ໂຫຼດ Vue 3 ສຳລັບຈັດການ State ແລະ Logic -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- ໂຫຼດ html5-qrcode ສຳລັບຟັງຊັນສະແກນຜ່ານກ້ອງ -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- ໂຫຼດ FontAwesome ສຳລັບໄອຄອນ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        #qr-reader__dashboard_section_csr { display: none !important; }
+        
+        /* Font ສຳລັບພາສາລາວ */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700&display=swap');
+        body { font-family: 'Noto Sans Lao', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col">
+        
+        <!-- ແຖບນຳທາງດ້ານເທິງ (Navbar) -->
+        <header class="bg-indigo-900 text-white shadow-md z-10">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-cube text-2xl text-indigo-400"></i>
+                    <h1 class="text-xl font-bold tracking-wide">QUANTUM<span class="text-indigo-300">POS</span></h1>
+                </div>
+                <nav class="flex space-x-2">
+                    <button @click="activeTab = 'pos'" :class="{'bg-indigo-700': activeTab === 'pos', 'hover:bg-indigo-800': activeTab !== 'pos'}" class="px-3 py-2 md:px-4 rounded-lg transition-colors flex items-center text-sm md:text-base">
+                        <i class="fa-solid fa-cash-register mr-2"></i> <span class="hidden md:inline">ຂາຍໜ້າຮ້ານ</span>
+                    </button>
+                    <button @click="activeTab = 'inventory'" :class="{'bg-indigo-700': activeTab === 'inventory', 'hover:bg-indigo-800': activeTab !== 'inventory'}" class="px-3 py-2 md:px-4 rounded-lg transition-colors flex items-center text-sm md:text-base">
+                        <i class="fa-solid fa-boxes-stacked mr-2"></i> <span class="hidden md:inline">ສາງສິນຄ້າ</span>
+                    </button>
+                    <button @click="activeTab = 'history'" :class="{'bg-indigo-700': activeTab === 'history', 'hover:bg-indigo-800': activeTab !== 'history'}" class="px-3 py-2 md:px-4 rounded-lg transition-colors flex items-center text-sm md:text-base">
+                        <i class="fa-solid fa-chart-pie mr-2"></i> <span class="hidden md:inline">ສະຫຼຸບຍອດຂາຍ</span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- ພື້ນທີ່ສະແດງຜົນຫຼັກ (Main Content) -->
+        <main class="flex-1 overflow-hidden flex relative">
+            
+            <!-- ========================================== -->
+            <!-- TAB: POS (ຂາຍໜ້າຮ້ານ) -->
+            <!-- ========================================== -->
+            <div v-if="activeTab === 'pos'" class="flex flex-col md:flex-row w-full h-full">
+                <!-- ສ່ວນເລືອກສິນຄ້າ (ດ້ານຊ້າຍ) -->
+                <div class="w-full md:w-2/3 h-1/2 md:h-full flex flex-col bg-slate-100 p-4 border-b md:border-b-0 md:border-r border-slate-200">
+                    <!-- ຄົ້ນຫາ ແລະ ສະແກນ -->
+                    <div class="flex space-x-2 mb-4">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i>
+                            <input v-model="searchQuery" type="text" placeholder="ຄົ້ນຫາສິນຄ້າ (ຊື່ ຫຼື QR Code)..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm text-base">
+                        </div>
+                        <button @click="openScanner('pos')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-6 rounded-xl shadow-sm transition-colors flex items-center justify-center font-semibold">
+                            <i class="fa-solid fa-qrcode md:mr-2"></i> <span class="hidden md:inline">ສະແກນ</span>
+                        </button>
+                    </div>
+
+                    <!-- ລາຍການສິນຄ້າ -->
+                    <div class="flex-1 overflow-y-auto pr-1">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            <div v-for="product in filteredProducts" :key="product.id" @click="addToCart(product)" class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all active:scale-95 flex flex-col justify-between h-32 relative overflow-hidden group">
+                                <div class="font-semibold text-slate-700 line-clamp-2 text-sm md:text-base">{{ product.name }}</div>
+                                <div class="flex justify-between items-end mt-2">
+                                    <div class="text-indigo-600 font-bold text-lg md:text-xl">₭{{ product.price.toLocaleString('lo-LA') }}</div>
+                                    <div class="text-[10px] md:text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">ສະຕັອກ: {{ product.stock }}</div>
+                                </div>
+                                <div v-if="product.stock <= 0" class="absolute inset-0 bg-white/80 flex items-center justify-center text-red-500 font-bold text-lg backdrop-blur-sm">ສິນຄ້າໝົດ</div>
+                            </div>
+                            <div v-if="filteredProducts.length === 0" class="col-span-full text-center py-10 text-slate-500">
+                                <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-300"></i>
+                                <p>ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ສ່ວນກະຕ່າສິນຄ້າ (ດ້ານຂວາ) -->
+                <div class="w-full md:w-1/3 h-1/2 md:h-full bg-white shadow-xl z-10 flex flex-col">
+                    <div class="p-3 md:p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                        <h2 class="text-base md:text-lg font-bold text-slate-700">ກະຕ່າສິນຄ້າ</h2>
+                        <button @click="clearCart" class="text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs md:text-sm transition-colors">
+                            <i class="fa-solid fa-trash-can"></i> ລ້າງ
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-3 md:p-4">
+                        <div v-if="cart.length === 0" class="h-full flex flex-col items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-cart-shopping text-4xl md:text-5xl mb-4 text-slate-200"></i>
+                            <p>ຍັງບໍ່ມີສິນຄ້າໃນກະຕ່າ</p>
+                        </div>
+                        
+                        <div v-for="(item, index) in cart" :key="index" class="flex justify-between items-center mb-3 p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm">
+                            <div class="flex-1 pr-2">
+                                <div class="font-semibold text-slate-800 text-sm md:text-base">{{ item.name }}</div>
+                                <div class="text-slate-500 text-xs mt-1">₭{{ item.price.toLocaleString('lo-LA') }} x {{ item.quantity }}</div>
+                            </div>
+                            <div class="flex items-center space-x-2 md:space-x-3">
+                                <div class="font-bold text-slate-800 text-sm md:text-base">₭{{ (item.price * item.quantity).toLocaleString('lo-LA') }}</div>
+                                <div class="flex flex-col space-y-1">
+                                    <button @click="increaseQty(item)" class="text-indigo-600 bg-indigo-100 hover:bg-indigo-200 w-6 h-6 rounded-md flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></button>
+                                    <button @click="decreaseQty(item, index)" class="text-red-600 bg-red-100 hover:bg-red-200 w-6 h-6 rounded-md flex items-center justify-center"><i class="fa-solid fa-minus text-xs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ຄຳນວນ ແລະ ຊຳລະເງິນ -->
+                    <div class="p-4 border-t border-slate-200 bg-slate-50">
+                        <div class="flex justify-between mb-2 text-slate-600 text-sm md:text-base">
+                            <span>ຈຳນວນລາຍການ:</span>
+                            <span>{{ cartTotalItems }} ອັນ</span>
+                        </div>
+                        <div class="flex justify-between mb-4 text-lg md:text-xl font-bold text-slate-800">
+                            <span>ຍອດລວມທັງໝົດ:</span>
+                            <span class="text-indigo-700">₭{{ cartTotalPrice.toLocaleString('lo-LA') }}</span>
+                        </div>
+                        
+                        <button @click="processCheckout" :disabled="cart.length === 0" :class="{'bg-indigo-600 hover:bg-indigo-700 shadow-md': cart.length > 0, 'bg-slate-300 cursor-not-allowed': cart.length === 0}" class="w-full text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg transition-all flex items-center justify-center">
+                            <i class="fa-solid fa-cash-register mr-2"></i> ຊຳລະເງິນ (Checkout)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB: INVENTORY (ສາງສິນຄ້າ) -->
+            <!-- ========================================== -->
+            <div v-if="activeTab === 'inventory'" class="w-full h-full p-4 md:p-6 overflow-y-auto bg-slate-50">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked mr-2 text-indigo-600"></i> ຈັດການສາງສິນຄ້າ</h2>
+                        <button @click="openAddProductModal" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition-colors flex items-center justify-center">
+                            <i class="fa-solid fa-plus mr-2"></i> ເພີ່ມສິນຄ້າໃໝ່
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 text-xs md:text-sm uppercase">
+                                    <th class="p-3 md:p-4 border-b">ລະຫັດ/QR</th>
+                                    <th class="p-3 md:p-4 border-b">ຊື່ສິນຄ້າ</th>
+                                    <th class="p-3 md:p-4 border-b text-right">ຕົ້ນທຶນ (₭)</th>
+                                    <th class="p-3 md:p-4 border-b text-right">ລາຄາຂາຍ (₭)</th>
+                                    <th class="p-3 md:p-4 border-b text-right">ຈຳນວນເຫຼືອ</th>
+                                    <th class="p-3 md:p-4 border-b text-center">ຈັດການ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="product in products" :key="product.id" class="border-b hover:bg-slate-50 transition-colors">
+                                    <td class="p-3 md:p-4 text-sm font-mono text-indigo-600">{{ product.qr || '-' }}</td>
+                                    <td class="p-3 md:p-4 font-semibold text-slate-800 text-sm md:text-base">{{ product.name }}</td>
+                                    <td class="p-3 md:p-4 text-right text-orange-600 text-sm md:text-base">₭{{ (product.cost || 0).toLocaleString('lo-LA') }}</td>
+                                    <td class="p-3 md:p-4 text-right text-blue-600 text-sm md:text-base">₭{{ product.price.toLocaleString('lo-LA') }}</td>
+                                    <td class="p-3 md:p-4 text-right text-sm md:text-base">
+                                        <span :class="{'text-red-500 font-bold bg-red-50 px-2 py-1 rounded': product.stock <= 5, 'text-emerald-600': product.stock > 5}">
+                                            {{ product.stock }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 md:p-4 text-center">
+                                        <button @click="editProduct(product)" class="text-blue-500 hover:bg-blue-100 px-3 py-2 rounded transition-colors mx-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button @click="deleteProduct(product.id)" class="text-red-500 hover:bg-red-100 px-3 py-2 rounded transition-colors mx-1"><i class="fa-solid fa-trash-can"></i></button>
+                                    </td>
+                                </tr>
+                                <tr v-if="products.length === 0">
+                                    <td colspan="6" class="p-8 text-center text-slate-500">ຍັງບໍ່ມີສິນຄ້າໃນລະບົບ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB: HISTORY (ສະຫຼຸບຍອດຂາຍ ແລະ ກຳໄລ) -->
+            <!-- ========================================== -->
+            <div v-if="activeTab === 'history'" class="w-full h-full p-4 md:p-6 overflow-y-auto bg-slate-50">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fa-solid fa-chart-pie mr-2 text-indigo-600"></i> ສະຫຼຸບຍອດຂາຍ ແລະ ກຳໄລ</h2>
+                        
+                        <!-- ຕົວເລືອກຊ່ວງເວລາ (Time Horizon) -->
+                        <div class="bg-white rounded-lg p-1 shadow-sm border border-slate-200 flex flex-wrap w-full md:w-auto">
+                            <button @click="reportPeriod = 'day'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'day', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'day'}" class="flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm transition-colors">ມື້ນີ້</button>
+                            <button @click="reportPeriod = 'week'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'week', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'week'}" class="flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm transition-colors">ອາທິດນີ້</button>
+                            <button @click="reportPeriod = 'month'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'month', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'month'}" class="flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm transition-colors">ເດືອນນີ້</button>
+                            <button @click="reportPeriod = 'year'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'year', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'year'}" class="flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm transition-colors">ປີນີ້</button>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard ສະຫຼຸບພາບລວມ (Macro View) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500 flex flex-col justify-center">
+                            <div class="text-slate-500 text-xs md:text-sm font-semibold mb-1">ລາຍຮັບລວມ (Revenue)</div>
+                            <div class="text-2xl md:text-3xl font-bold text-slate-800">₭{{ summaryStats.revenue.toLocaleString('lo-LA') }}</div>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 flex flex-col justify-center">
+                            <div class="text-slate-500 text-xs md:text-sm font-semibold mb-1">ຕົ້ນທຶນລວມ (Cost)</div>
+                            <div class="text-2xl md:text-3xl font-bold text-slate-800">₭{{ summaryStats.cost.toLocaleString('lo-LA') }}</div>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500 flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 opacity-10"><i class="fa-solid fa-seedling text-8xl text-emerald-500"></i></div>
+                            <div class="text-slate-500 text-xs md:text-sm font-semibold mb-1">ກຳໄລສຸດທິ (Net Profit)</div>
+                            <div class="text-3xl md:text-4xl font-bold text-emerald-600">₭{{ summaryStats.profit.toLocaleString('lo-LA') }}</div>
+                            <div class="text-[10px] md:text-xs text-emerald-700 mt-2 font-bold bg-emerald-50 inline-block px-2 py-1 rounded-md self-start">
+                                ອັດຕາກຳໄລ (Margin): {{ summaryStats.revenue > 0 ? ((summaryStats.profit / summaryStats.revenue) * 100).toFixed(1) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="filteredHistory.length === 0" class="text-center p-10 bg-white rounded-xl shadow-sm border border-slate-200 text-slate-500">
+                        ບໍ່ມີຂໍ້ມູນການຂາຍໃນຊ່ວງເວລາທີ່ທ່ານເລືອກ
+                    </div>
+
+                    <div v-for="sale in filteredHistory.slice().reverse()" :key="sale.timestamp" class="bg-white rounded-xl shadow-sm border border-slate-200 mb-4 overflow-hidden">
+                        <div class="p-3 md:p-4 bg-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 gap-2">
+                            <div class="text-xs md:text-sm text-slate-600"><i class="fa-regular fa-clock mr-1"></i> {{ new Date(sale.timestamp).toLocaleString('lo-LA') }}</div>
+                            <div class="flex space-x-4 md:space-x-6 text-sm font-semibold">
+                                <div class="text-slate-600">ຍອດຂາຍ: ₭{{ sale.total.toLocaleString('lo-LA') }}</div>
+                                <div class="text-emerald-600">ກຳໄລ: +₭{{ (sale.profit || 0).toLocaleString('lo-LA') }}</div>
+                            </div>
+                        </div>
+                        <div class="p-3 md:p-4 bg-white">
+                            <div v-for="item in sale.items" class="flex justify-between text-xs md:text-sm mb-2 text-slate-700">
+                                <span class="font-medium">{{ item.name }} (x{{ item.quantity }})</span>
+                                <span class="text-slate-600 text-right flex flex-col md:flex-row md:items-center">
+                                    <span class="text-orange-500 md:mr-3 text-[10px] md:text-xs">ທຶນ ₭{{ ((item.cost || 0) * item.quantity).toLocaleString('lo-LA') }}</span>
+                                    <span>ຂາຍ ₭{{ (item.price * item.quantity).toLocaleString('lo-LA') }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MODALS -->
+            <!-- ========================================== -->
+            
+            <!-- Modal: Scanner (ກ້ອງ) -->
+            <div v-show="showScanner" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col h-auto max-h-[90vh]">
+                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                        <h3 class="font-bold text-base md:text-lg"><i class="fa-solid fa-camera mr-2"></i> ສະແກນບາໂຄດ / QR Code</h3>
+                        <button @click="closeScanner" class="text-slate-300 hover:text-white transition-colors p-1"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col items-center justify-center bg-slate-100 relative">
+                        
+                        <!-- ແຈ້ງເຕືອນເມື່ອກ້ອງມີບັນຫາ (Error State) -->
+                        <div v-if="cameraError" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-white p-6 z-10 text-center">
+                            <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
+                            <h4 class="font-bold text-lg mb-2 text-red-400">ບໍ່ສາມາດເປີດກ້ອງໄດ້</h4>
+                            <p class="text-sm text-slate-300 mb-4">{{ cameraError }}</p>
+                            <div class="text-xs text-left bg-slate-900 p-3 rounded border border-slate-700 w-full">
+                                <span class="font-bold text-emerald-400">ວິທີແກ້ໄຂ:</span><br>
+                                1. ເປີດໄຟລ໌ນີ້ຜ່ານ Web Server (localhost)<br>
+                                2. ຫຼື ອັບໂຫຼດຂຶ້ນເວັບໄຊຕ໌ທີ່ມີ HTTPS (ເຊັ່ນ Netlify)<br>
+                                3. ຫ້າມເປີດຜ່ານ Telegram/Line ໂດຍກົງ
+                            </div>
+                        </div>
+
+                        <!-- Camera Container -->
+                        <div id="reader" class="w-full bg-black rounded-lg overflow-hidden border-2 border-indigo-500 shadow-inner min-h-[300px]"></div>
+                        <p class="mt-4 text-xs md:text-sm text-slate-600 text-center font-medium">
+                            ຫັນກ້ອງໄປທີ່ QR Code ຂອງສິນຄ້າ<br>
+                            <span class="text-[10px] text-red-500 font-normal">(ຕ້ອງເປີດຜ່ານ HTTPS ຫຼື Localhost ເທົ່ານັ້ນ)</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: ເພີ່ມ/ແກ້ໄຂ ສິນຄ້າ -->
+            <div v-if="showProductModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+                    <h3 class="text-xl font-bold mb-5 text-slate-800 border-b pb-2">{{ isEditing ? 'ແກ້ໄຂສິນຄ້າ' : 'ເພີ່ມສິນຄ້າໃໝ່' }}</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">ຊື່ສິນຄ້າ</label>
+                            <input v-model="formData.name" type="text" placeholder="ເຊັ່ນ: ກາເຟເຢັນ..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+                        </div>
+                        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3">
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-semibold text-slate-600 mb-1">ຕົ້ນທຶນ (₭)</label>
+                                <input v-model.number="formData.cost" type="number" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none border-l-4 border-l-orange-400 bg-slate-50">
+                            </div>
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-semibold text-slate-600 mb-1">ລາຄາຂາຍ (₭)</label>
+                                <input v-model.number="formData.price" type="number" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none border-l-4 border-l-blue-400 bg-slate-50">
+                            </div>
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-semibold text-slate-600 mb-1">ຈຳນວນສະຕັອກ</label>
+                                <input v-model.number="formData.stock" type="number" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
+                            </div>
+                        </div>
+                        <div class="pt-2">
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">ລະຫັດບາໂຄດ / QR Code</label>
+                            <div class="flex space-x-2">
+                                <input v-model="formData.qr" type="text" placeholder="ປ້ອນລະຫັດ ຫຼື ສະແກນເອົາ" class="flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-mono text-indigo-700">
+                                <button @click="openScanner('inventory')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 rounded-lg border border-indigo-200 transition-colors shadow-sm" title="ເປີດກ້ອງສະແກນ">
+                                    <i class="fa-solid fa-qrcode text-lg"></i>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">* ຫາກປະຫວ່າງໄວ້, ທ່ານສາມາດຂາຍໂດຍການຄົ້ນຫາຊື່ໄດ້</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 flex justify-end space-x-3">
+                        <button @click="showProductModal = false" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium">ຍົກເລີກ</button>
+                        <button @click="saveProduct" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-semibold shadow-md">ບັນທຶກ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ແຈ້ງເຕືອນ (Toast) -->
+            <div v-if="toast.show" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-semibold transition-all duration-300 flex items-center text-sm md:text-base whitespace-nowrap" :class="{'bg-emerald-500': toast.type === 'success', 'bg-red-500': toast.type === 'error', 'bg-blue-500': toast.type === 'info'}">
+                <i :class="{'fa-check-circle': toast.type === 'success', 'fa-circle-exclamation': toast.type === 'error', 'fa-circle-info': toast.type === 'info'}" class="fa-solid mr-2 text-lg"></i>
+                {{ toast.message }}
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted, reactive } = Vue;
+
+        createApp({
+            setup() {
+                // State ພື້ນຖານ
+                const activeTab = ref('pos');
+                const searchQuery = ref('');
+                
+                // ຂໍ້ມູນສິນຄ້າຕັ້ງຕົ້ນ (ສຳລັບເງິນກີບ)
+                const products = ref([
+                    { id: 1, name: 'ກາເຟອາເມຣິກາໂນ່ເຢັນ', cost: 15000, price: 25000, stock: 100, qr: 'COF001' },
+                    { id: 2, name: 'ຊາຂຽວມັດຊະ', cost: 20000, price: 30000, stock: 50, qr: 'TEA001' },
+                    { id: 3, name: 'ແຊນວິດແຮມຊີດ', cost: 12000, price: 20000, stock: 20, qr: 'FOOD001' },
+                ]);
+                
+                const cart = ref([]);
+                const salesHistory = ref([]);
+                const reportPeriod = ref('day'); // state ສຳລັບແກນເວລາ
+                
+                // State ສຳລັບ Modal ແລະ Scanner
+                const showProductModal = ref(false);
+                const isEditing = ref(false);
+                const formData = reactive({ id: null, name: '', cost: 0, price: 0, stock: 0, qr: '' });
+                
+                const showScanner = ref(false);
+                const scannerMode = ref('pos'); 
+                const cameraError = ref(''); // State ສຳລັບເກັບຂໍ້ຄວາມ Error ຂອງກ້ອງ
+                let html5QrcodeScanner = null;
+
+                const toast = reactive({ show: false, message: '', type: 'success' });
+
+                const showToast = (message, type = 'success') => {
+                    toast.message = message;
+                    toast.type = type;
+                    toast.show = true;
+                    setTimeout(() => { toast.show = false; }, 3000);
+                };
+
+                // --- ໂຫຼດ/ບັນທຶກ ຂໍ້ມູນລົງ LocalStorage ---
+                const loadData = () => {
+                    const savedProducts = localStorage.getItem('quantum_pos_products_la');
+                    if (savedProducts) products.value = JSON.parse(savedProducts);
+                    
+                    const savedHistory = localStorage.getItem('quantum_pos_history_la');
+                    if (savedHistory) salesHistory.value = JSON.parse(savedHistory);
+                };
+
+                const saveData = () => {
+                    localStorage.setItem('quantum_pos_products_la', JSON.stringify(products.value));
+                    localStorage.setItem('quantum_pos_history_la', JSON.stringify(salesHistory.value));
+                };
+
+                onMounted(() => {
+                    loadData();
+                });
+
+                // --- Logic ການຈັດການສິນຄ້າ (Inventory) ---
+                const filteredProducts = computed(() => {
+                    const q = searchQuery.value.toLowerCase();
+                    if (!q) return products.value;
+                    return products.value.filter(p => p.name.toLowerCase().includes(q) || (p.qr && p.qr.toLowerCase().includes(q)));
+                });
+
+                const openAddProductModal = () => {
+                    isEditing.value = false;
+                    formData.id = null;
+                    formData.name = '';
+                    formData.cost = 0;
+                    formData.price = 0;
+                    formData.stock = 10;
+                    formData.qr = '';
+                    showProductModal.value = true;
+                };
+
+                const editProduct = (product) => {
+                    isEditing.value = true;
+                    formData.id = product.id;
+                    formData.name = product.name;
+                    formData.cost = product.cost || 0;
+                    formData.price = product.price;
+                    formData.stock = product.stock;
+                    formData.qr = product.qr;
+                    showProductModal.value = true;
+                };
+
+                const saveProduct = () => {
+                    if (!formData.name || formData.price <= 0) {
+                        showToast('ກະລຸນາປ້ອນຊື່ ແລະ ລາຄາໃຫ້ຖືກຕ້ອງ', 'error');
+                        return;
+                    }
+
+                    if (isEditing.value) {
+                        const index = products.value.findIndex(p => p.id === formData.id);
+                        if (index !== -1) {
+                            products.value[index] = { ...formData };
+                            showToast('ອັບເດດຂໍ້ມູນສຳເລັດ');
+                        }
+                    } else {
+                        const newId = Date.now();
+                        products.value.push({ ...formData, id: newId });
+                        showToast('ເພີ່ມສິນຄ້າສຳເລັດ');
+                    }
+                    
+                    saveData();
+                    showProductModal.value = false;
+                };
+
+                const deleteProduct = (id) => {
+                    if (confirm('ທ່ານຕ້ອງການລຶບສິນຄ້ານີ້ແທ້ບໍ່?')) {
+                        products.value = products.value.filter(p => p.id !== id);
+                        saveData();
+                        showToast('ລຶບສິນຄ້າສຳເລັດ', 'info');
+                    }
+                };
+
+                // --- Logic ການຂາຍ (POS) ---
+                const addToCart = (product) => {
+                    if (product.stock <= 0) {
+                        showToast('ສິນຄ້າໝົດສະຕັອກ!', 'error');
+                        return;
+                    }
+                    
+                    const existingItem = cart.value.find(item => item.id === product.id);
+                    if (existingItem) {
+                        if (existingItem.quantity < product.stock) {
+                            existingItem.quantity++;
+                        } else {
+                            showToast('ຈຳນວນເກີນສະຕັອກທີ່ມີ', 'error');
+                        }
+                    } else {
+                        cart.value.push({ ...product, quantity: 1 });
+                    }
+                    playBeep();
+                };
+
+                const increaseQty = (item) => {
+                    const product = products.value.find(p => p.id === item.id);
+                    if (product && item.quantity < product.stock) {
+                        item.quantity++;
+                    } else {
+                        showToast('ຈຳນວນເກີນສະຕັອກ', 'error');
+                    }
+                };
+
+                const decreaseQty = (item, index) => {
+                    if (item.quantity > 1) {
+                        item.quantity--;
+                    } else {
+                        cart.value.splice(index, 1);
+                    }
+                };
+
+                const clearCart = () => {
+                    cart.value = [];
+                };
+
+                const cartTotalItems = computed(() => {
+                    return cart.value.reduce((total, item) => total + item.quantity, 0);
+                });
+
+                const cartTotalPrice = computed(() => {
+                    return cart.value.reduce((total, item) => total + (item.price * item.quantity), 0);
+                });
+                
+                const cartTotalCost = computed(() => {
+                    return cart.value.reduce((total, item) => total + ((item.cost || 0) * item.quantity), 0);
+                });
+
+                const processCheckout = () => {
+                    if (cart.value.length === 0) return;
+
+                    // 1. ຕັດສະຕັອກ
+                    cart.value.forEach(cartItem => {
+                        const product = products.value.find(p => p.id === cartItem.id);
+                        if (product) {
+                            product.stock -= cartItem.quantity;
+                        }
+                    });
+
+                    // 2. ບັນທຶກປະຫວັດການຂາຍ
+                    const saleTotal = cartTotalPrice.value;
+                    const saleCost = cartTotalCost.value;
+                    const saleProfit = saleTotal - saleCost;
+
+                    const saleRecord = {
+                        timestamp: Date.now(),
+                        items: [...cart.value],
+                        total: saleTotal,
+                        cost: saleCost,
+                        profit: saleProfit
+                    };
+                    salesHistory.value.push(saleRecord);
+
+                    // 3. ບັນທຶກຂໍ້ມູນ ແລະ ລ້າງກະຕ່າ
+                    saveData();
+                    clearCart();
+                    showToast('ຊຳລະເງິນສຳເລັດ ຕັດສະຕັອກຮຽບຮ້ອຍ', 'success');
+                };
+
+                const playBeep = () => {
+                    try {
+                        const context = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = context.createOscillator();
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(880, context.currentTime);
+                        oscillator.connect(context.destination);
+                        oscillator.start();
+                        oscillator.stop(context.currentTime + 0.1);
+                    } catch(e) {}
+                };
+
+                // --- ລະບົບສະແກນ QR Code ຂັ້ນສູງ (Camera Fix ມືຖື) ---
+                const startWithFacingMode = (config) => {
+                    html5QrcodeScanner.start(
+                        { facingMode: "environment" },
+                        config,
+                        handleScanSuccess,
+                        () => {} // Ignore scan errors
+                    ).catch(err => {
+                        console.error("Camera access error:", err);
+                        cameraError.value = "ບຣາວເຊີຣ໌ບລັອກການເຂົ້າເຖິງກ້ອງ. ລະບົບຄວາມປອດໄພບັງຄັບໃຫ້ໃຊ້ HTTPS ຫຼື Localhost ເທົ່ານັ້ນ.";
+                        showToast('ບໍ່ສາມາດເປີດກ້ອງໄດ້', 'error');
+                    });
+                };
+
+                const openScanner = (mode) => {
+                    scannerMode.value = mode;
+                    cameraError.value = ''; // Reset error ກ່ອນເປີດ
+                    showScanner.value = true;
+                    
+                    setTimeout(() => {
+                        startScanner();
+                    }, 300);
+                };
+
+                const startScanner = () => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.clear().catch(err => console.log(err));
+                    }
+                    
+                    html5QrcodeScanner = new Html5Qrcode("reader");
+                    
+                    // ຫຼຸດຂະໜາດ qrbox ລົງເພື່ອບໍ່ໃຫ້ກ້ອງມືຖືບາງລຸ້ນ Error (Resilience scaling)
+                    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+                    
+                    // ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນເຄື່ອງກ່ອນ
+                    Html5Qrcode.getCameras().then(devices => {
+                        if (devices && devices.length > 0) {
+                            // ພະຍາຍາມຊອກຫາກ້ອງຫຼັງ (Back Camera)
+                            let cameraId = devices[0].id; // ຄ່າເລີ່ມຕົ້ນ
+                            for (let i = 0; i < devices.length; i++) {
+                                const label = devices[i].label.toLowerCase();
+                                if (label.includes('back') || label.includes('environment') || label.includes('rear')) {
+                                    cameraId = devices[i].id;
+                                    break;
+                                }
+                            }
+                            
+                            // ໃຊ້ Camera ID ໂດຍກົງເພື່ອຫຼີກລ່ຽງການບລັອກ facingMode ຂອງ Chrome Mobile
+                            html5QrcodeScanner.start(
+                                cameraId,
+                                config,
+                                handleScanSuccess,
+                                () => {} 
+                            ).catch(err => {
+                                console.warn("Camera ID failed, fallback to facingMode");
+                                startWithFacingMode(config);
+                            });
+                        } else {
+                            cameraError.value = "ບໍ່ພົບອຸປະກອນກ້ອງຖ່າຍຮູບໃນເຄື່ອງນີ້.";
+                            startWithFacingMode(config);
+                        }
+                    }).catch(err => {
+                        console.warn("Get cameras failed (Permissions), fallback to facingMode");
+                        if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+                            cameraError.value = "ທ່ານຍັງບໍ່ໄດ້ອະນຸຍາດໃຫ້ເວັບໄຊຕ໌ນີ້ເຂົ້າເຖິງກ້ອງຖ່າຍຮູບ.";
+                        } else {
+                            cameraError.value = "ກົດລະບຽບຄວາມປອດໄພບລັອກການກວດສອບກ້ອງ (ຕ້ອງໃຊ້ HTTPS).";
+                        }
+                        startWithFacingMode(config);
+                    });
+                };
+
+                const handleScanSuccess = (decodedText) => {
+                    playBeep();
+                    closeScanner();
+                    
+                    if (scannerMode.value === 'pos') {
+                        const product = products.value.find(p => p.qr === decodedText);
+                        if (product) {
+                            addToCart(product);
+                            showToast(`ພົບສິນຄ້າ: ${product.name}`, 'info');
+                            searchQuery.value = '';
+                        } else {
+                            showToast(`ບໍ່ພົບສິນຄ້າທີ່ມີລະຫັດ: ${decodedText}`, 'error');
+                        }
+                    } else if (scannerMode.value === 'inventory') {
+                        formData.qr = decodedText;
+                        showToast('ສະແກນລະຫັດສຳເລັດ');
+                    }
+                };
+
+                const closeScanner = () => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then(() => {
+                            html5QrcodeScanner.clear();
+                        }).catch(err => console.log(err));
+                    }
+                    showScanner.value = false;
+                };
+
+                // --- ຟັງຊັນການວິເຄາະຕາມແກນເວລາ ---
+                const isWithinPeriod = (timestamp, period) => {
+                    const date = new Date(timestamp);
+                    const now = new Date();
+                    
+                    if (period === 'day') {
+                        return date.getDate() === now.getDate() &&
+                               date.getMonth() === now.getMonth() &&
+                               date.getFullYear() === now.getFullYear();
+                    } else if (period === 'week') {
+                        const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+                        firstDayOfWeek.setHours(0,0,0,0);
+                        return date >= firstDayOfWeek;
+                    } else if (period === 'month') {
+                        return date.getMonth() === now.getMonth() &&
+                               date.getFullYear() === now.getFullYear();
+                    } else if (period === 'year') {
+                        return date.getFullYear() === now.getFullYear();
+                    }
+                    return true;
+                };
+
+                const filteredHistory = computed(() => {
+                    return salesHistory.value.filter(sale => isWithinPeriod(sale.timestamp, reportPeriod.value));
+                });
+
+                const summaryStats = computed(() => {
+                    return filteredHistory.value.reduce((acc, sale) => {
+                        acc.revenue += (sale.total || 0);
+                        acc.cost += (sale.cost || 0);
+                        acc.profit += (sale.profit || 0);
+                        return acc;
+                    }, { revenue: 0, cost: 0, profit: 0 });
+                });
+
+                onUnmounted(() => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().catch(err => console.log(err));
+                    }
+                });
+
+                return {
+                    activeTab,
+                    searchQuery,
+                    products,
+                    filteredProducts,
+                    cart,
+                    salesHistory,
+                    reportPeriod,
+                    filteredHistory,
+                    summaryStats,
+                    cartTotalItems,
+                    cartTotalPrice,
+                    showProductModal,
+                    isEditing,
+                    formData,
+                    showScanner,
+                    toast,
+                    openAddProductModal,
+                    editProduct,
+                    saveProduct,
+                    deleteProduct,
+                    addToCart,
+                    increaseQty,
+                    decreaseQty,
+                    clearCart,
+                    processCheckout,
+                    openScanner,
+                    closeScanner
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
