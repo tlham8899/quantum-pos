@@ -254,7 +254,8 @@
             <!-- ========================================== -->
             
             <!-- Modal: Scanner (ກ້ອງ) -->
-            <div v-show="showScanner" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <!-- ແກ້ໄຂແກນ Z ຈາກ z-50 ເປັນ z-[60] ເພື່ອໃຫ້ກ້ອງລອຍຢູ່ເໜືອທຸກມິຕິ (Dimensional Shift) -->
+            <div v-show="showScanner" class="fixed inset-0 bg-slate-900/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
                 <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col h-auto max-h-[90vh]">
                     <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
                         <h3 class="font-bold text-base md:text-lg"><i class="fa-solid fa-camera mr-2"></i> ສະແກນບາໂຄດ / QR Code</h3>
@@ -298,11 +299,13 @@
                         <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3">
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-semibold text-slate-600 mb-1">ຕົ້ນທຶນ (₭)</label>
-                                <input v-model.number="formData.cost" type="number" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none border-l-4 border-l-orange-400 bg-slate-50">
+                                <!-- ປ່ຽນການຮັບຄ່າເປັນແບບ Dynamic Formatting -->
+                                <input :value="formatNumberInput(formData.cost)" @input="e => formData.cost = parseNumberInput(e.target.value)" type="text" inputmode="numeric" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none border-l-4 border-l-orange-400 bg-slate-50 font-bold text-slate-700">
                             </div>
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-semibold text-slate-600 mb-1">ລາຄາຂາຍ (₭)</label>
-                                <input v-model.number="formData.price" type="number" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none border-l-4 border-l-blue-400 bg-slate-50">
+                                <!-- ປ່ຽນການຮັບຄ່າເປັນແບບ Dynamic Formatting -->
+                                <input :value="formatNumberInput(formData.price)" @input="e => formData.price = parseNumberInput(e.target.value)" type="text" inputmode="numeric" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none border-l-4 border-l-blue-400 bg-slate-50 font-bold text-indigo-700">
                             </div>
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-semibold text-slate-600 mb-1">ຈຳນວນສະຕັອກ</label>
@@ -374,6 +377,19 @@
                     toast.type = type;
                     toast.show = true;
                     setTimeout(() => { toast.show = false; }, 3000);
+                };
+
+                // --- ຟັງຊັນຈັດການຮູບແບບຕົວເລກ (Cognitive Formatting) ---
+                const formatNumberInput = (val) => {
+                    if (val === 0 || !val) return '';
+                    // ໃຊ້ Regular Expression ແບ່ງທຸກໆ 3 ຫຼັກດ້ວຍຈຸດ ຫຼຸດພາລະການອ່ານຂອງສະໝອງ
+                    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                };
+
+                const parseNumberInput = (val) => {
+                    // ແປງຄ່າທີ່ມີຈຸດກັບຄືນເປັນຕົວເລກບໍລິສຸດ (Raw Integer) ເພື່ອໃຫ້ຄອມພິວເຕີຄິດໄລ່ໄດ້
+                    const parsed = parseInt(val.replace(/,/g, ''), 10);
+                    return isNaN(parsed) ? 0 : parsed;
                 };
 
                 // --- ໂຫຼດ/ບັນທຶກ ຂໍ້ມູນລົງ LocalStorage ---
@@ -722,6 +738,8 @@
                     formData,
                     showScanner,
                     toast,
+                    formatNumberInput,  // ຢ່າລືມສົ່ງອອກຟັງຊັນໃໝ່ໃຫ້ Template ໃຊ້ງານ
+                    parseNumberInput,   // ຢ່າລືມສົ່ງອອກຟັງຊັນໃໝ່ໃຫ້ Template ໃຊ້ງານ
                     openAddProductModal,
                     editProduct,
                     saveProduct,
