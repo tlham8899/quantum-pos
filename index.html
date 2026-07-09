@@ -580,8 +580,23 @@
                     
                     html5QrcodeScanner = new Html5Qrcode("reader");
                     
-                    // ຫຼຸດຂະໜາດ qrbox ລົງເພື່ອບໍ່ໃຫ້ກ້ອງມືຖືບາງລຸ້ນ Error (Resilience scaling)
-                    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+                    // ปรับแต่งขอบเขตการรับรู้ (Quantum Observation Field)
+                    // 1. ปรับสัดส่วน qrbox ให้เป็นสี่เหลี่ยมผืนผ้า (250x150) เพื่อให้รับกับเส้นบาร์โค้ด 1D ได้อย่างสมบูรณ์แบบ
+                    // 2. ขยายคลื่นความถี่ (formatsToSupport) ให้ครอบคลุมทั้ง 1D Barcode และ 2D QR Code
+                    const config = { 
+                        fps: 15, // เพิ่ม Frame rate เพื่อความรวดเร็วในการจับภาพ
+                        qrbox: { width: 250, height: 150 },
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats.QR_CODE,
+                            Html5QrcodeSupportedFormats.EAN_13,   // สำหรับบาร์โค้ดสินค้าทั่วไปแบบในภาพ (13 หลัก)
+                            Html5QrcodeSupportedFormats.EAN_8,
+                            Html5QrcodeSupportedFormats.CODE_39,
+                            Html5QrcodeSupportedFormats.CODE_128, // สำหรับบาร์โค้ดพัสดุหรือสินค้านำเข้า
+                            Html5QrcodeSupportedFormats.UPC_A,
+                            Html5QrcodeSupportedFormats.UPC_E,
+                            Html5QrcodeSupportedFormats.ITF
+                        ]
+                    };
                     
                     // ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນເຄື່ອງກ່ອນ
                     Html5Qrcode.getCameras().then(devices => {
