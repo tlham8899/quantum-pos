@@ -73,7 +73,7 @@
                     <div class="flex space-x-2 mb-4">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i>
-                            <input v-model="searchQuery" type="text" placeholder="ຄົ້ນຫາສິນຄ້າ (ຊື່ ຫຼື QR Code)..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white shadow-sm">
+                            <input v-model="searchQuery" type="text" placeholder="ຄົ້ນຫາສິນຄ້າ (ຊື່ ຫຼື QR Code)..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white transition">
                         </div>
                         <button @click="openScanner('pos')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-6 rounded-xl shadow-sm transition-colors flex items-center justify-center font-medium">
                             <i class="fa-solid fa-qrcode md:mr-2"></i> <span class="hidden md:inline">ສະແກນ</span>
@@ -83,7 +83,7 @@
                     <!-- ລາຍການສິນຄ້າ -->
                     <div class="flex-1 overflow-y-auto pr-1">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                            <div v-for="product in filteredProducts" :key="product.id" @click="addToCart(product)" class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all relative">
+                            <div v-for="product in filteredProducts" :key="product.id" @click="addToCart(product)" class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition relative">
                                 <div class="font-semibold text-slate-700 line-clamp-2 text-sm md:text-base">{{ product.name }}</div>
                                 <div class="flex justify-between items-end mt-2">
                                     <div class="text-indigo-600 font-bold text-lg md:text-xl">₭{{ product.price.toLocaleString('lo-LA') }}</div>
@@ -140,7 +140,7 @@
                             <span class="text-indigo-700">₭{{ cartTotalPrice.toLocaleString('lo-LA') }}</span>
                         </div>
                         
-                        <button @click="processCheckout" :disabled="cart.length === 0" :class="{'bg-indigo-600 hover:bg-indigo-700 shadow-md': cart.length > 0, 'bg-slate-300 cursor-not-allowed': cart.length === 0}" class="w-full text-white font-bold py-3 rounded-lg transition-colors">
+                        <button @click="processCheckout" :disabled="cart.length === 0" :class="{'bg-indigo-600 hover:bg-indigo-700 shadow-md': cart.length > 0, 'bg-slate-300 cursor-not-allowed': cart.length === 0}" class="w-full py-3 text-white font-bold rounded-lg transition-colors">
                             <i class="fa-solid fa-cash-register mr-2"></i> ຊຳລະເງິນ (Checkout)
                         </button>
                     </div>
@@ -154,7 +154,7 @@
                 <div class="max-w-5xl mx-auto">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked mr-2 text-indigo-600"></i> ຈັດການສາງສິນຄ້າ</h2>
-                        <button @click="openAddProductModal" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition-colors flex items-center justify-center font-semibold">
+                        <button @click="openAddProductModal" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition-colors flex items-center justify-center font-medium">
                             <i class="fa-solid fa-plus mr-2"></i> ເພີ່ມສິນຄ້າໃໝ່
                         </button>
                     </div>
@@ -206,10 +206,10 @@
                         
                         <!-- ຕົວເລືອກຊ່ວງເວລາ (Time Horizon) -->
                         <div class="bg-white rounded-lg p-1 shadow-sm border border-slate-200 flex flex-wrap w-full md:w-auto">
-                            <button @click="reportPeriod = 'day'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'day', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'day'}" class="px-3 py-1.5 rounded transition-colors text-sm">ວັນ</button>
-                            <button @click="reportPeriod = 'week'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'week', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'week'}" class="px-3 py-1.5 rounded transition-colors text-sm">ອາທິດ</button>
-                            <button @click="reportPeriod = 'month'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'month', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'month'}" class="px-3 py-1.5 rounded transition-colors text-sm">ເດືອນ</button>
-                            <button @click="reportPeriod = 'year'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'year', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'year'}" class="px-3 py-1.5 rounded transition-colors text-sm">ປີ</button>
+                            <button @click="reportPeriod = 'day'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'day', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'day'}" class="px-4 py-1.5 rounded-md transition-colors text-sm font-medium">ວັນນີ້</button>
+                            <button @click="reportPeriod = 'week'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'week', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'week'}" class="px-4 py-1.5 rounded-md transition-colors text-sm font-medium">ອາທິດນີ້</button>
+                            <button @click="reportPeriod = 'month'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'month', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'month'}" class="px-4 py-1.5 rounded-md transition-colors text-sm font-medium">ເດືອນນີ້</button>
+                            <button @click="reportPeriod = 'year'" :class="{'bg-indigo-100 text-indigo-700 font-bold': reportPeriod === 'year', 'text-slate-500 hover:bg-slate-50': reportPeriod !== 'year'}" class="px-4 py-1.5 rounded-md transition-colors text-sm font-medium">ປີນີ້</button>
                         </div>
                     </div>
 
@@ -272,7 +272,7 @@
                     
                     <!-- ລະບົບຄວບຄຸມກ້ອງດ້ວຍຕົວເອງ (Quantum Manual Override) -->
                     <div v-if="availableCameras.length > 0" class="bg-slate-800 p-3 flex flex-col space-y-2">
-                        <label class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-sliders mr-1"></i> ເລືອກເລນສ໌ກ້ອງ (ສຳລັບສະແກນໃກ້)</label>
+                        <label class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-sliders mr-1"></i> ເລືອກເລນສ໌ກ້ອງ (ສຳລັບສະແກນໃກ້ຫຼາຍ)</label>
                         <select v-model="selectedCameraId" @change="switchCamera" class="w-full p-2.5 text-sm md:text-base border border-slate-600 rounded-lg bg-slate-700 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                             <option v-for="cam in availableCameras" :key="cam.id" :value="cam.id">
                                 {{ formatCameraName(cam.label) }}
@@ -336,7 +336,7 @@
                                     <i class="fa-solid fa-qrcode text-lg"></i>
                                 </button>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">* ຫາກປະຫວ່າງໄວ້, ທ່ານສາມາດຂາຍໂດຍການຄົ້ນຫາຊື່ໄດ້</p>
+                            <p class="text-[11px] text-slate-400 mt-1">* ຫາກປະຫວ່າງໄວ້, ທ່ານສາມາດຂາຍໂດຍການຄົ້ນຫາຊື່</p>
                         </div>
                     </div>
                     
@@ -348,7 +348,7 @@
             </div>
 
             <!-- ແຈ້ງເຕືອນ (Toast) -->
-            <div v-if="toast.show" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-semibold transition-all duration-300 flex items-center" :class="{'bg-green-500': toast.type === 'success', 'bg-red-500': toast.type === 'error', 'bg-blue-500': toast.type === 'info'}">
+            <div v-if="toast.show" :class="{'bg-emerald-500': toast.type === 'success', 'bg-red-500': toast.type === 'error', 'bg-blue-500': toast.type === 'info'}" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-semibold transition-all duration-300 flex items-center">
                 <i :class="{'fa-check-circle': toast.type === 'success', 'fa-circle-exclamation': toast.type === 'error', 'fa-circle-info': toast.type === 'info'}" class="fa-solid mr-2 text-lg"></i>
                 {{ toast.message }}
             </div>
@@ -386,6 +386,7 @@
                 const selectedCameraId = ref(null);
                 let html5QrcodeScanner = null;
                 let isScannerInitializing = false;
+                let currentScanningCameraId = null;
 
                 const toast = reactive({ show: false, message: '', type: 'success' });
 
@@ -607,18 +608,16 @@
                         console.log('Clear error (expected):', e);
                     }
 
-                    // ຟື້ນຟູ ຕົວປ່ຽນ
                     html5QrcodeScanner = null;
+                    currentScanningCameraId = null;
                 };
 
                 const openScanner = async (mode) => {
-                    // ປະຕິເສດຖ້າກໍາລັງເລີ່ມຕົ້ນ
                     if (isScannerInitializing) {
                         showToast('ກ້ອງກໍາລັງເລີ່ມຕົ້ນ... ກະລຸນາລໍ່ຖ້າ', 'info');
                         return;
                     }
 
-                    // ລ້າງ scanner ເກົ່າກ່ອນເລີ່ມຕົ້ນໃໝ່
                     await properlyCleanupScanner();
 
                     scannerMode.value = mode;
@@ -631,7 +630,7 @@
                     }, 300);
                 };
 
-                // ຂັ້ນຕອນທີ 1: ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນຈັກກະວານຂອງມືຖື
+                // ຂັ້ນຕອນທີ 1: ດຶງຂໍ້ມູນກ້ອງທັງໝົດ
                 const initCamerasAndStart = async () => {
                     try {
                         html5QrcodeScanner = new Html5Qrcode("reader");
@@ -640,11 +639,11 @@
                         if (devices && devices.length > 0) {
                             availableCameras.value = devices;
                             
-                            // ຖ້າຜູ້ໃຊ້ຍັງບໍ່ເຄີຍເລືອກກ້ອງດ້ວຍຕົນເອງ, ໃຫ້ລະບົບເລືອກກ້ອງຫຼັງທີ່ດີທີ່ສຸດ
-                            if (!selectedCameraId.value) {
+                            // ຖ້າບໍ່ມີການເລືອກກ້ອງ ຫຼື ກ້ອງທີ່ເລືອກມາບໍ່ມີ, ໃຫ້ລະບົບເລືອກ
+                            if (!selectedCameraId.value || !devices.find(d => d.id === selectedCameraId.value)) {
                                 let bestCam = devices[0];
                                 
-                                // ຊອກຫາກ້ອງ macro ທຳອິດ (ດີທີ່ສຸດສຳລັບ QR Code)
+                                // ຊອກຫາກ້ອງ macro ທຳອິດ
                                 for (let cam of devices) {
                                     const label = cam.label.toLowerCase();
                                     if (label.includes('macro') || label.includes('micro')) {
@@ -653,11 +652,11 @@
                                     }
                                 }
                                 
-                                // ຖ້າບໍ່ມີ macro, ໃຫ້ຊອກຫາກ້ອງຫຼັງທົ່ວໄປ
+                                // ຖ້າບໍ່ມີ macro, ໃຫ້ຊອກຫາກ້ອງຫຼັງ
                                 if (!bestCam.label.toLowerCase().includes('macro')) {
                                     for (let cam of devices) {
                                         const label = cam.label.toLowerCase();
-                                        if ((label.includes('back') || label.includes('environment') || label.includes('rear') || label.includes('0,')) 
+                                        if ((label.includes('back') || label.includes('environment') || label.includes('rear')) 
                                             && !label.includes('front') 
                                             && !label.includes('ultrawide') 
                                             && !label.includes('0.5x')) {
@@ -670,7 +669,7 @@
                                 selectedCameraId.value = bestCam.id;
                             }
 
-                            startScanningWithId(selectedCameraId.value);
+                            startScanningWithCamera(selectedCameraId.value);
                         } else {
                             cameraError.value = "ບໍ່ພົບອຸປະກອນກ້ອງຖ່າຍຮູບໃນເຄື່ອງນີ້.";
                             isScannerInitializing = false;
@@ -678,9 +677,9 @@
                     } catch (err) {
                         console.error("Camera Init Error:", err);
                         if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
-                            cameraError.value = "ທ່ານຍັງບໍ່ໄດ້ອະນຸຍາດໃຫ້ເວັບໄຊຕ໌ນີ້ເຂົ້າເຖິງກ້ອງ. ກະລຸນາກົດອະນຸຍາດໃນໂປແກຣມ ຫຼື ກົດໃຫມ່ໂຫຼດຫາກ້ອງ.";
-                        } else if (err.toString().includes('NotAllowedError')) {
-                            cameraError.value = "ກົດລະບຽບຄວາມປອດໄພບລັອກການກວດສອບກ້ອງ (ຕ້ອງໃຊ້ HTTPS).";
+                            cameraError.value = "ທ່ານຍັງບໍ່ໄດ້ອະນຸຍາດໃຫ້ເວັບໄຊຕ໌ນີ້ເຂົ້າເຖິງກ້ອງ. ກະລຸນາກົດອະນຸຍາດ.";
+                        } else if (err.toString().includes('NotSupported')) {
+                            cameraError.value = "ເວັບໄຊຕ໌ນີ້ບໍ່ສາມາດເຂົ້າເຖິງກ້ອງໄດ້ຈາກເບາວເຊີທີ່ທ່ານໃຊ້.";
                         } else {
                             cameraError.value = "ເກີດຂໍ້ຜິດພາດ: " + err.message;
                         }
@@ -688,8 +687,14 @@
                     }
                 };
 
-                // ຂັ້ນຕອນທີ 2: ສັ່ງເປີດກ້ອງຕາມ ID ທີ່ລະບຸ
-                const startScanningWithId = (cameraId) => {
+                // ຂັ້ນຕອນທີ 2: ເລີ່ມສະແກນກ້ອງໃໝ່ (ແກ້ໄຂກະປາກບາໍ່)
+                const startScanningWithCamera = (cameraId) => {
+                    // ຖ້າກ້ອງທີ່ REQUEST ໄວ້ແມ່ນກ້ອງທີ່ໃຊ້ຢູ່, ບໍ່ຕ້ອງຮ້ອງຂໍໃໝ່
+                    if (currentScanningCameraId === cameraId) {
+                        console.log('ກ້ອງ ' + cameraId + ' ກໍາລັງສະແກນຢູ່, ບໍ່ຕ້ອງຮ້ອງຂໍໃໝ່');
+                        return;
+                    }
+
                     const config = { 
                         fps: 15,
                         qrbox: (videoWidth, videoHeight) => {
@@ -705,36 +710,66 @@
                         ]
                     };
 
+                    // 🔧 ກະປາກບາໍ່: ກຳນົດ deviceId ທີ່ຖືກຕ້ອງ ແລະ facingMode
+                    const videoConstraints = {
+                        deviceId: { exact: cameraId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment' // ບັງຄັບໃຊ້ກ້ອງຫຼັງ
+                    };
+
+                    console.log('📹 ກຳລັງເລີ່ມສະແກນກ້ອງ:', cameraId, 'ດ້ວຍ constraints:', videoConstraints);
+
                     html5QrcodeScanner.start(
                         cameraId,
-                        { ...config, videoConstraints: { advanced: [{ focusMode: "continuous" }] } },
+                        { ...config, videoConstraints },
                         handleScanSuccess,
                         () => {} 
                     ).then(() => {
+                        currentScanningCameraId = cameraId;
                         isScannerInitializing = false;
+                        console.log('✅ ເລີ່ມສະແກນສຳເລັດ ກ້ອງ:', cameraId);
                     }).catch(err => {
                         console.error("Start Camera Failed:", err);
-                        cameraError.value = "ເກີດຂໍ້ຜິດພາດໃນການເປີດເລນສ໌ກ້ອງນີ້: " + err.message;
+                        cameraError.value = "ເກີດຂໍ້ຜິດພາດໃນການເປີດກ້ອງ: " + err.message;
                         isScannerInitializing = false;
                     });
                 };
 
-                // ຂັ້ນຕອນທີ 3: ເມື່ອຜູ້ໃຊ້ກົດປ່ຽນກ້ອງດ້ວຍຕົນເອງ (Manual Override)
+                // ຂັ້ນຕອນທີ 3: ປ່ຽນກ້ອງແມ່ນ (ແກ້ໄຂຢ່າງຍິ່ງ)
                 const switchCamera = async () => {
                     if (!html5QrcodeScanner || !selectedCameraId.value) return;
                     
+                    console.log('🔄 ກະລຸນາປ່ຽນກ້ອງເປັນ:', selectedCameraId.value);
+                    
                     try {
                         const state = html5QrcodeScanner.getState();
-                        if (state === Html5QrcodeScanner.SCANNING) {
-                            await html5QrcodeScanner.stop();
+                        
+                        // ຖ້າກ້ອງທີ່ REQUEST ໄວ້ຄືກັນ, ບໍ່ຕ້ອງປ່ຽນ
+                        if (currentScanningCameraId === selectedCameraId.value) {
+                            console.log('ກ້ອງແມ່ນກ້ອງດຽວກັນ, ບໍ່ຕ້ອງປ່ຽນ');
+                            return;
                         }
-                        // ບໍ່ລ້າງ scanner ເກົ່າ, ພຽງແຕ່ເລີ່ມຕົ້ນໃໝ່ກັບກ້ອງໃໝ່
-                        startScanningWithId(selectedCameraId.value);
+
+                        // ຖ້າກໍາລັງສະແກນ, ໃຫ້ຢຸດກ່ອນ
+                        if (state === Html5QrcodeScanner.SCANNING) {
+                            console.log('⏹️ ຢຸດສະແກນ');
+                            await html5QrcodeScanner.stop();
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+                        
+                        console.log('🎥 ເລີ່ມກ້ອງໃໝ່:', selectedCameraId.value);
+                        startScanningWithCamera(selectedCameraId.value);
                     } catch (err) {
                         console.error("Switch Camera Error:", err);
-                        // ຖ້າມີຂໍ້ຜິດພາດ, ໃຫ້ສ້າງ scanner ໃໝ່ທັງໝົດ
+                        showToast('ຂໍ້ຜິດພາດໃນການປ່ຽນກ້ອງ', 'error');
+                        
+                        // ຖ້າມີຂໍ້ຜິດພາດ, ໃຫ້ລະບົບສະກັດຕົວວັດຖຸ scanner ອອກ ແລະ ສ້າງໃໝ່
                         properlyCleanupScanner();
-                        setTimeout(() => initCamerasAndStart(), 500);
+                        setTimeout(() => {
+                            html5QrcodeScanner = new Html5Qrcode("reader");
+                            startScanningWithCamera(selectedCameraId.value);
+                        }, 500);
                     }
                 };
 
@@ -747,14 +782,13 @@
                             addToCart(product);
                             showToast(`ພົບສິນຄ້າ: ${product.name}`, 'info');
                             searchQuery.value = '';
-                            // ບໍ່ປິດ scanner, ໃຫ້ຜູ້ໃຊ້ສາມາດສະແກນຕໍ່ໄປໄດ້
                         } else {
                             showToast(`ບໍ່ພົບສິນຄ້າທີ່ມີລະຫັດ: ${decodedText}`, 'error');
                         }
                     } else if (scannerMode.value === 'inventory') {
                         formData.qr = decodedText;
                         showToast('ສະແກນລະຫັດສຳເລັດ');
-                        closeScanner(); // ປິດ scanner ສຳລັບ inventory
+                        closeScanner();
                     }
                 };
 
@@ -762,7 +796,6 @@
                     await properlyCleanupScanner();
                     showScanner.value = false;
                     isScannerInitializing = false;
-                    selectedCameraId.value = null;
                 };
 
                 const isWithinPeriod = (timestamp, period) => {
