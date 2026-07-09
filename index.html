@@ -597,40 +597,50 @@
                     html5QrcodeScanner = new Html5Qrcode("reader");
                     
                     // ปรับแต่งขอบเขตการรับรู้ (Quantum Observation Field)
-                    // 1. ปรับสัดส่วน qrbox ให้เป็นสี่เหลี่ยมผืนผ้า (250x150) เพื่อให้รับกับเส้นบาร์โค้ด 1D ได้อย่างสมบูรณ์แบบ
-                    // 2. ขยายคลื่นความถี่ (formatsToSupport) ให้ครอบคลุมทั้ง 1D Barcode และ 2D QR Code
+                    // ใช้ฟังก์ชันคำนวณ qrbox ให้ยืดหยุ่นตามขนาดหน้าจอจริง
                     const config = { 
-                        fps: 15, // เพิ่ม Frame rate เพื่อความรวดเร็วในการจับภาพ
-                        qrbox: { width: 250, height: 150 },
+                        fps: 20, // เพิ่ม Frame rate สูงสุดเพื่อความแม่นยำ
+                        qrbox: (videoWidth, videoHeight) => {
+                            const width = Math.min(videoWidth * 0.8, 300);
+                            return { width: width, height: 150 }; // สี่เหลี่ยมผืนผ้าแนวยาวสำหรับ Barcode
+                        },
+                        aspectRatio: 1.0, // ให้ CSS object-fit จัดการส่วนที่ล้น
                         formatsToSupport: [
                             Html5QrcodeSupportedFormats.QR_CODE,
-                            Html5QrcodeSupportedFormats.EAN_13,   // สำหรับบาร์โค้ดสินค้าทั่วไปแบบในภาพ (13 หลัก)
-                            Html5QrcodeSupportedFormats.EAN_8,
-                            Html5QrcodeSupportedFormats.CODE_39,
-                            Html5QrcodeSupportedFormats.CODE_128, // สำหรับบาร์โค้ดพัสดุหรือสินค้านำเข้า
-                            Html5QrcodeSupportedFormats.UPC_A,
-                            Html5QrcodeSupportedFormats.UPC_E,
-                            Html5QrcodeSupportedFormats.ITF
+                            Html5QrcodeSupportedFormats.EAN_13,
+                            Html5QrcodeSupportedFormats.CODE_128,
+                            Html5QrcodeSupportedFormats.UPC_A
                         ]
                     };
                     
                     // ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນເຄື່ອງກ່ອນ
                     Html5Qrcode.getCameras().then(devices => {
                         if (devices && devices.length > 0) {
-                            // ພະຍາຍາມຊອກຫາກ້ອງຫຼັງ (Back Camera)
-                            let cameraId = devices[0].id; // ຄ່າເລີ່ມຕົ້ນ
+                            let cameraId = devices[0].id;
+                            
+                            // Quantum Sifting: กรองหาเฉพาะกล้องหลังตัวหลัก (หลีกเลี่ยงกล้องมุมกว้างที่ไม่มีออโต้โฟกัส)
                             for (let i = 0; i < devices.length; i++) {
                                 const label = devices[i].label.toLowerCase();
-                                if (label.includes('back') || label.includes('environment') || label.includes('rear')) {
+                                
+                                // ข้ามเลนส์ Ultra-wide, Depth, Infrared ทันที
+                                if (label.includes('ultrawide') || label.includes('ultra wide') || label.includes('depth') || label.includes('infrared') || label.includes('0.5x')) {
+                                    continue;
+                                }
+                                
+                                // มองหากล้องหลัง
+                                if (label.includes('back') || label.includes('environment') || label.includes('rear') || label.includes('0,')) {
                                     cameraId = devices[i].id;
-                                    break;
+                                    // ถ้าเจอกล้องที่ระบุว่าเป็นเลนส์หลัก (Main) ให้ล็อคเป้าทันที
+                                    if (label.includes('main') || label.includes('primary') || label === 'back camera') {
+                                        break;
+                                    }
                                 }
                             }
                             
-                            // ໃຊ້ Camera ID ໂດຍກົງເພື່ອຫຼີກລ່ຽງການບລັອກ facingMode ຂອງ Chrome Mobile
+                            // ส่งคำสั่งระดับฮาร์ดแวร์เพื่อเรียกใช้ Auto Focus (ถ้าอุปกรณ์รองรับ)
                             html5QrcodeScanner.start(
                                 cameraId,
-                                config,
+                                { ...config, videoConstraints: { advanced: [{ focusMode: "continuous" }] } },
                                 handleScanSuccess,
                                 () => {} 
                             ).catch(err => {
