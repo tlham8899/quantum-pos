@@ -22,6 +22,15 @@
         
         #qr-reader__dashboard_section_csr { display: none !important; }
         
+        /* แก้มิติภาพบิดเบี้ยว */
+        #reader video {
+            object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 0.5rem;
+        }
+        #reader { border: none !important; }
+        
         /* Font ສຳລັບພາສາລາວ */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700&display=swap');
         body { font-family: 'Noto Sans Lao', sans-serif; }
@@ -254,16 +263,25 @@
             <!-- ========================================== -->
             
             <!-- Modal: Scanner (ກ້ອງ) -->
-            <!-- ແກ້ໄຂແກນ Z ຈາກ z-50 ເປັນ z-[60] ເພື່ອໃຫ້ກ້ອງລອຍຢູ່ເໜືອທຸກມິຕິ (Dimensional Shift) -->
-            <div v-show="showScanner" class="fixed inset-0 bg-slate-900/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div v-show="showScanner" class="fixed inset-0 bg-slate-900/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
                 <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col h-auto max-h-[90vh]">
-                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-                        <h3 class="font-bold text-base md:text-lg"><i class="fa-solid fa-camera mr-2"></i> ສະແກນບາໂຄດ / QR Code</h3>
-                        <button @click="closeScanner" class="text-slate-300 hover:text-white transition-colors p-1"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center border-b border-slate-700">
+                        <h3 class="font-bold text-base md:text-lg"><i class="fa-solid fa-camera mr-2 text-indigo-400"></i> ລະບົບສະແກນບາໂຄດ</h3>
+                        <button @click="closeScanner" class="text-slate-400 hover:text-white transition-colors p-1"><i class="fa-solid fa-xmark text-2xl"></i></button>
                     </div>
+                    
+                    <!-- ລະບົບຄວບຄຸມກ້ອງດ້ວຍຕົວເອງ (Quantum Manual Override) -->
+                    <div v-if="availableCameras.length > 0" class="bg-slate-800 p-3 flex flex-col space-y-2">
+                        <label class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-sliders mr-1"></i> ເລືອກເລນສ໌ກ້ອງ (ສຳລັບສະແກນໃກ້ໆ)</label>
+                        <select v-model="selectedCameraId" @change="switchCamera" class="w-full p-2.5 text-sm md:text-base border border-slate-600 rounded-lg bg-slate-700 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none">
+                            <option v-for="cam in availableCameras" :key="cam.id" :value="cam.id">
+                                {{ formatCameraName(cam.label) }}
+                            </option>
+                        </select>
+                    </div>
+
                     <div class="p-4 flex-1 flex flex-col items-center justify-center bg-slate-100 relative">
-                        
-                        <!-- ແຈ້ງເຕືອນເມື່ອກ້ອງມີບັນຫາ (Error State) -->
+                        <!-- ແຈ້ງເຕືອນເມື່ອກ້ອງມີບັນຫາ -->
                         <div v-if="cameraError" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-white p-6 z-10 text-center">
                             <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
                             <h4 class="font-bold text-lg mb-2 text-red-400">ບໍ່ສາມາດເປີດກ້ອງໄດ້</h4>
@@ -271,16 +289,16 @@
                             <div class="text-xs text-left bg-slate-900 p-3 rounded border border-slate-700 w-full">
                                 <span class="font-bold text-emerald-400">ວິທີແກ້ໄຂ:</span><br>
                                 1. ເປີດໄຟລ໌ນີ້ຜ່ານ Web Server (localhost)<br>
-                                2. ຫຼື ອັບໂຫຼດຂຶ້ນເວັບໄຊຕ໌ທີ່ມີ HTTPS (ເຊັ່ນ Netlify)<br>
+                                2. ຫຼື ອັບໂຫຼດຂຶ້ນເວັບໄຊຕ໌ທີ່ມີ HTTPS (ເຊັ່ນ Netlify, GitHub)<br>
                                 3. ຫ້າມເປີດຜ່ານ Telegram/Line ໂດຍກົງ
                             </div>
                         </div>
 
                         <!-- Camera Container -->
-                        <div id="reader" class="w-full bg-black rounded-lg overflow-hidden border-2 border-indigo-500 shadow-inner min-h-[300px]"></div>
+                        <div id="reader" class="w-full bg-black rounded-lg overflow-hidden border-2 border-indigo-500 shadow-inner min-h-[250px]"></div>
                         <p class="mt-4 text-xs md:text-sm text-slate-600 text-center font-medium">
-                            ຫັນກ້ອງໄປທີ່ QR Code ຂອງສິນຄ້າ<br>
-                            <span class="text-[10px] text-red-500 font-normal">(ຕ້ອງເປີດຜ່ານ HTTPS ຫຼື Localhost ເທົ່ານັ້ນ)</span>
+                            <i class="fa-solid fa-crosshairs text-indigo-500 mr-1"></i> ຫັນກ້ອງເຂົ້າໃກ້ບາໂຄດສິນຄ້າ<br>
+                            <span class="text-[11px] text-slate-400 font-normal">(ຫາກບໍ່ຊັດເຈນ, ໃຫ້ເລືອກປ່ຽນກ້ອງຢູ່ດ້ານເທິງ)</span>
                         </p>
                     </div>
                 </div>
@@ -299,12 +317,10 @@
                         <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3">
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-semibold text-slate-600 mb-1">ຕົ້ນທຶນ (₭)</label>
-                                <!-- ປ່ຽນການຮັບຄ່າເປັນແບບ Dynamic Formatting -->
                                 <input :value="formatNumberInput(formData.cost)" @input="e => formData.cost = parseNumberInput(e.target.value)" type="text" inputmode="numeric" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none border-l-4 border-l-orange-400 bg-slate-50 font-bold text-slate-700">
                             </div>
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-semibold text-slate-600 mb-1">ລາຄາຂາຍ (₭)</label>
-                                <!-- ປ່ຽນການຮັບຄ່າເປັນແບບ Dynamic Formatting -->
                                 <input :value="formatNumberInput(formData.price)" @input="e => formData.price = parseNumberInput(e.target.value)" type="text" inputmode="numeric" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none border-l-4 border-l-blue-400 bg-slate-50 font-bold text-indigo-700">
                             </div>
                             <div class="w-full md:w-1/3">
@@ -345,11 +361,9 @@
 
         createApp({
             setup() {
-                // State ພື້ນຖານ
                 const activeTab = ref('pos');
                 const searchQuery = ref('');
                 
-                // ຂໍ້ມູນສິນຄ້າຕັ້ງຕົ້ນ (ສຳລັບເງິນກີບ)
                 const products = ref([
                     { id: 1, name: 'ກາເຟອາເມຣິກາໂນ່ເຢັນ', cost: 15000, price: 25000, stock: 100, qr: 'COF001' },
                     { id: 2, name: 'ຊາຂຽວມັດຊະ', cost: 20000, price: 30000, stock: 50, qr: 'TEA001' },
@@ -358,16 +372,18 @@
                 
                 const cart = ref([]);
                 const salesHistory = ref([]);
-                const reportPeriod = ref('day'); // state ສຳລັບແກນເວລາ
+                const reportPeriod = ref('day'); 
                 
-                // State ສຳລັບ Modal ແລະ Scanner
                 const showProductModal = ref(false);
                 const isEditing = ref(false);
                 const formData = reactive({ id: null, name: '', cost: 0, price: 0, stock: 0, qr: '' });
                 
+                // ຕົວແປສຳລັບລະບົບກ້ອງໃໝ່
                 const showScanner = ref(false);
                 const scannerMode = ref('pos'); 
-                const cameraError = ref(''); // State ສຳລັບເກັບຂໍ້ຄວາມ Error ຂອງກ້ອງ
+                const cameraError = ref(''); 
+                const availableCameras = ref([]);
+                const selectedCameraId = ref(null);
                 let html5QrcodeScanner = null;
 
                 const toast = reactive({ show: false, message: '', type: 'success' });
@@ -379,20 +395,16 @@
                     setTimeout(() => { toast.show = false; }, 3000);
                 };
 
-                // --- ຟັງຊັນຈັດການຮູບແບບຕົວເລກ (Cognitive Formatting) ---
                 const formatNumberInput = (val) => {
                     if (val === 0 || !val) return '';
-                    // ໃຊ້ Regular Expression ແບ່ງທຸກໆ 3 ຫຼັກດ້ວຍຈຸດ ຫຼຸດພາລະການອ່ານຂອງສະໝອງ
                     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 };
 
                 const parseNumberInput = (val) => {
-                    // ແປງຄ່າທີ່ມີຈຸດກັບຄືນເປັນຕົວເລກບໍລິສຸດ (Raw Integer) ເພື່ອໃຫ້ຄອມພິວເຕີຄິດໄລ່ໄດ້
                     const parsed = parseInt(val.replace(/,/g, ''), 10);
                     return isNaN(parsed) ? 0 : parsed;
                 };
 
-                // --- ໂຫຼດ/ບັນທຶກ ຂໍ້ມູນລົງ LocalStorage ---
                 const loadData = () => {
                     const savedProducts = localStorage.getItem('quantum_pos_products_la');
                     if (savedProducts) products.value = JSON.parse(savedProducts);
@@ -410,7 +422,6 @@
                     loadData();
                 });
 
-                // --- Logic ການຈັດການສິນຄ້າ (Inventory) ---
                 const filteredProducts = computed(() => {
                     const q = searchQuery.value.toLowerCase();
                     if (!q) return products.value;
@@ -469,7 +480,6 @@
                     }
                 };
 
-                // --- Logic ການຂາຍ (POS) ---
                 const addToCart = (product) => {
                     if (product.stock <= 0) {
                         showToast('ສິນຄ້າໝົດສະຕັອກ!', 'error');
@@ -525,7 +535,6 @@
                 const processCheckout = () => {
                     if (cart.value.length === 0) return;
 
-                    // 1. ຕັດສະຕັອກ
                     cart.value.forEach(cartItem => {
                         const product = products.value.find(p => p.id === cartItem.id);
                         if (product) {
@@ -533,7 +542,6 @@
                         }
                     });
 
-                    // 2. ບັນທຶກປະຫວັດການຂາຍ
                     const saleTotal = cartTotalPrice.value;
                     const saleCost = cartTotalCost.value;
                     const saleProfit = saleTotal - saleCost;
@@ -547,7 +555,6 @@
                     };
                     salesHistory.value.push(saleRecord);
 
-                    // 3. ບັນທຶກຂໍ້ມູນ ແລະ ລ້າງກະຕ່າ
                     saveData();
                     clearCart();
                     showToast('ຊຳລະເງິນສຳເລັດ ຕັດສະຕັອກຮຽບຮ້ອຍ', 'success');
@@ -565,46 +572,86 @@
                     } catch(e) {}
                 };
 
-                // --- ລະບົບສະແກນ QR Code ຂັ້ນສູງ (Camera Fix ມືຖື) ---
-                const startWithFacingMode = (config) => {
-                    html5QrcodeScanner.start(
-                        { facingMode: "environment" },
-                        config,
-                        handleScanSuccess,
-                        () => {} // Ignore scan errors
-                    ).catch(err => {
-                        console.error("Camera access error:", err);
-                        cameraError.value = "ບຣາວເຊີຣ໌ບລັອກການເຂົ້າເຖິງກ້ອງ. ລະບົບຄວາມປອດໄພບັງຄັບໃຫ້ໃຊ້ HTTPS ຫຼື Localhost ເທົ່ານັ້ນ.";
-                        showToast('ບໍ່ສາມາດເປີດກ້ອງໄດ້', 'error');
-                    });
+                // --- ລະບົບຄວບຄຸມກ້ອງລະດັບຮາດແວຣ໌ (Hardware Override) ---
+                
+                // ແປງຊື່ກ້ອງໃຫ້ອ່ານງ່າຍຂຶ້ນ
+                const formatCameraName = (label) => {
+                    if (!label) return 'ກ້ອງບໍ່ລະບຸຊື່';
+                    let lower = label.toLowerCase();
+                    if (lower.includes('front') || lower.includes('user')) return `ກ້ອງໜ້າ (${label.substring(0, 10)}...)`;
+                    if (lower.includes('back') || lower.includes('environment') || lower.includes('0,')) {
+                        if (lower.includes('ultrawide') || lower.includes('0.5x')) return `ກ້ອງຫຼັງ (ມຸມກວ້າງ) - ບໍ່ແນະນຳ`;
+                        if (lower.includes('macro')) return `ກ້ອງຫຼັງ (ມາໂຄຣ/ໃກ້) - ແນະນຳ!`;
+                        return `ກ້ອງຫຼັງຫຼັກ (${label.substring(0, 15)}...)`;
+                    }
+                    return label;
                 };
 
                 const openScanner = (mode) => {
                     scannerMode.value = mode;
-                    cameraError.value = ''; // Reset error ກ່ອນເປີດ
+                    cameraError.value = '';
                     showScanner.value = true;
                     
                     setTimeout(() => {
-                        startScanner();
+                        initCamerasAndStart();
                     }, 300);
                 };
 
-                const startScanner = () => {
+                // ຂັ້ນຕອນທີ 1: ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນຈັກກະວານຂອງມືຖື
+                const initCamerasAndStart = async () => {
                     if (html5QrcodeScanner) {
-                        html5QrcodeScanner.clear().catch(err => console.log(err));
+                        await html5QrcodeScanner.clear().catch(e => console.log(e));
                     }
                     
                     html5QrcodeScanner = new Html5Qrcode("reader");
-                    
-                    // ปรับแต่งขอบเขตการรับรู้ (Quantum Observation Field)
-                    // ใช้ฟังก์ชันคำนวณ qrbox ให้ยืดหยุ่นตามขนาดหน้าจอจริง
+
+                    try {
+                        const devices = await Html5Qrcode.getCameras();
+                        if (devices && devices.length > 0) {
+                            availableCameras.value = devices;
+                            
+                            // ຖ້າຜູ້ໃຊ້ຍັງບໍ່ເຄີຍເລືອກກ້ອງດ້ວຍຕົນເອງ, ໃຫ້ລະບົບເດົາກ້ອງຫຼັງທີ່ດີທີ່ສຸດກ່ອນ
+                            if (!selectedCameraId.value) {
+                                let bestCam = devices[0];
+                                for (let cam of devices) {
+                                    const label = cam.label.toLowerCase();
+                                    // ຊອກຫາກ້ອງຫຼັງ ແລະ ຫຼີກລ່ຽງກ້ອງໜ້າ/ກ້ອງມຸມກວ້າງ
+                                    if ((label.includes('back') || label.includes('environment') || label.includes('rear') || label.includes('0,')) 
+                                        && !label.includes('front')) {
+                                        
+                                        if (!label.includes('ultrawide') && !label.includes('0.5x')) {
+                                            bestCam = cam; // ພົບກ້ອງຫຼັງຫຼັກທີ່ຖ່າຍໃກ້ໄດ້
+                                            break;
+                                        }
+                                        bestCam = cam;
+                                    }
+                                }
+                                selectedCameraId.value = bestCam.id;
+                            }
+
+                            startScanningWithId(selectedCameraId.value);
+                        } else {
+                            cameraError.value = "ບໍ່ພົບອຸປະກອນກ້ອງຖ່າຍຮູບໃນເຄື່ອງນີ້.";
+                        }
+                    } catch (err) {
+                        console.error("Camera Init Error:", err);
+                        if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+                            cameraError.value = "ທ່ານຍັງບໍ່ໄດ້ອະນຸຍາດໃຫ້ເວັບໄຊຕ໌ນີ້ເຂົ້າເຖິງກ້ອງຖ່າຍຮູບ.";
+                        } else {
+                            cameraError.value = "ກົດລະບຽບຄວາມປອດໄພບລັອກການກວດສອບກ້ອງ (ຕ້ອງໃຊ້ HTTPS).";
+                        }
+                    }
+                };
+
+                // ຂັ້ນຕອນທີ 2: ສັ່ງເປີດກ້ອງຕາມ ID ທີ່ລະບຸ
+                const startScanningWithId = (cameraId) => {
                     const config = { 
-                        fps: 20, // เพิ่ม Frame rate สูงสุดเพื่อความแม่นยำ
+                        fps: 15,
                         qrbox: (videoWidth, videoHeight) => {
                             const width = Math.min(videoWidth * 0.8, 300);
-                            return { width: width, height: 150 }; // สี่เหลี่ยมผืนผ้าแนวยาวสำหรับ Barcode
+                            return { width: width, height: 150 };
                         },
-                        aspectRatio: 1.0, // ให้ CSS object-fit จัดการส่วนที่ล้น
+                        aspectRatio: 1.0,
                         formatsToSupport: [
                             Html5QrcodeSupportedFormats.QR_CODE,
                             Html5QrcodeSupportedFormats.EAN_13,
@@ -612,54 +659,29 @@
                             Html5QrcodeSupportedFormats.UPC_A
                         ]
                     };
-                    
-                    // ດຶງຂໍ້ມູນກ້ອງທັງໝົດໃນເຄື່ອງກ່ອນ
-                    Html5Qrcode.getCameras().then(devices => {
-                        if (devices && devices.length > 0) {
-                            let cameraId = devices[0].id;
-                            
-                            // Quantum Sifting: กรองหาเฉพาะกล้องหลังตัวหลัก (หลีกเลี่ยงกล้องมุมกว้างที่ไม่มีออโต้โฟกัส)
-                            for (let i = 0; i < devices.length; i++) {
-                                const label = devices[i].label.toLowerCase();
-                                
-                                // ข้ามเลนส์ Ultra-wide, Depth, Infrared ทันที
-                                if (label.includes('ultrawide') || label.includes('ultra wide') || label.includes('depth') || label.includes('infrared') || label.includes('0.5x')) {
-                                    continue;
-                                }
-                                
-                                // มองหากล้องหลัง
-                                if (label.includes('back') || label.includes('environment') || label.includes('rear') || label.includes('0,')) {
-                                    cameraId = devices[i].id;
-                                    // ถ้าเจอกล้องที่ระบุว่าเป็นเลนส์หลัก (Main) ให้ล็อคเป้าทันที
-                                    if (label.includes('main') || label.includes('primary') || label === 'back camera') {
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            // ส่งคำสั่งระดับฮาร์ดแวร์เพื่อเรียกใช้ Auto Focus (ถ้าอุปกรณ์รองรับ)
-                            html5QrcodeScanner.start(
-                                cameraId,
-                                { ...config, videoConstraints: { advanced: [{ focusMode: "continuous" }] } },
-                                handleScanSuccess,
-                                () => {} 
-                            ).catch(err => {
-                                console.warn("Camera ID failed, fallback to facingMode");
-                                startWithFacingMode(config);
-                            });
-                        } else {
-                            cameraError.value = "ບໍ່ພົບອຸປະກອນກ້ອງຖ່າຍຮູບໃນເຄື່ອງນີ້.";
-                            startWithFacingMode(config);
-                        }
-                    }).catch(err => {
-                        console.warn("Get cameras failed (Permissions), fallback to facingMode");
-                        if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
-                            cameraError.value = "ທ່ານຍັງບໍ່ໄດ້ອະນຸຍາດໃຫ້ເວັບໄຊຕ໌ນີ້ເຂົ້າເຖິງກ້ອງຖ່າຍຮູບ.";
-                        } else {
-                            cameraError.value = "ກົດລະບຽບຄວາມປອດໄພບລັອກການກວດສອບກ້ອງ (ຕ້ອງໃຊ້ HTTPS).";
-                        }
-                        startWithFacingMode(config);
+
+                    html5QrcodeScanner.start(
+                        cameraId,
+                        { ...config, videoConstraints: { advanced: [{ focusMode: "continuous" }] } },
+                        handleScanSuccess,
+                        () => {} 
+                    ).catch(err => {
+                        console.error("Start Camera Failed:", err);
+                        cameraError.value = "ເກີດຂໍ້ຜິດພາດໃນການເປີດເລນສ໌ກ້ອງນີ້.";
                     });
+                };
+
+                // ຂັ້ນຕອນທີ 3: ເມື່ອຜູ້ໃຊ້ກົດປ່ຽນກ້ອງດ້ວຍຕົນເອງ (Manual Override)
+                const switchCamera = () => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then(() => {
+                            startScanningWithId(selectedCameraId.value);
+                        }).catch(err => {
+                            console.error("Stop Camera Error:", err);
+                            // ຖ້າປິດກ້ອງເກົ່າຜິດພາດ, ໃຫ້ບັງຄັບເປີດໃໝ່ເລີຍ
+                            startScanningWithId(selectedCameraId.value);
+                        });
+                    }
                 };
 
                 const handleScanSuccess = (decodedText) => {
@@ -690,7 +712,6 @@
                     showScanner.value = false;
                 };
 
-                // --- ຟັງຊັນການວິເຄາະຕາມແກນເວລາ ---
                 const isWithinPeriod = (timestamp, period) => {
                     const date = new Date(timestamp);
                     const now = new Date();
@@ -747,9 +768,13 @@
                     isEditing,
                     formData,
                     showScanner,
+                    availableCameras,
+                    selectedCameraId,
+                    cameraError,
                     toast,
-                    formatNumberInput,  // ຢ່າລືມສົ່ງອອກຟັງຊັນໃໝ່ໃຫ້ Template ໃຊ້ງານ
-                    parseNumberInput,   // ຢ່າລືມສົ່ງອອກຟັງຊັນໃໝ່ໃຫ້ Template ໃຊ້ງານ
+                    formatNumberInput,
+                    parseNumberInput,
+                    formatCameraName,
                     openAddProductModal,
                     editProduct,
                     saveProduct,
@@ -760,6 +785,7 @@
                     clearCart,
                     processCheckout,
                     openScanner,
+                    switchCamera,
                     closeScanner
                 };
             }
